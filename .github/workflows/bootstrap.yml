@@ -1,0 +1,31 @@
+name: Bootstrap repository
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".bootstrap/loyola_vercel_ready.zip"
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Expand project archive
+        run: |
+          rm -rf .bootstrap_unpack
+          mkdir .bootstrap_unpack
+          unzip -q .bootstrap/loyola_vercel_ready.zip -d .bootstrap_unpack
+          shopt -s dotglob
+          cp -R .bootstrap_unpack/loyola_vercel_ready/* .
+          rm -rf .bootstrap .bootstrap_unpack
+          rm -f .github/workflows/bootstrap.yml
+      - name: Commit expanded repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: import Loyola application"
+          git push
