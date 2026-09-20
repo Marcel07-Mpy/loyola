@@ -1,6 +1,6 @@
 /**
- * Pool PostgreSQL partagé. DATABASE_URL est privilégiée en hébergement ;
- * les variables DB_* restent compatibles avec le développement local.
+ * Pool PostgreSQL partagé.
+ * Accepte les noms de variables courants de Vercel/Neon.
  */
 import pkg from 'pg';
 const { Pool } = pkg;
@@ -8,12 +8,22 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const useConnectionString = Boolean(process.env.DATABASE_URL);
-const sslEnabled = process.env.DB_SSL === 'true' || (useConnectionString && process.env.DB_SSL !== 'false');
+const connectionString =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.NEON_DATABASE_URL ||
+  process.env.DATABASE_URL_UNPOOLED ||
+  null;
+
+const useConnectionString = Boolean(connectionString);
+const sslEnabled =
+  process.env.DB_SSL === 'true' ||
+  (useConnectionString && process.env.DB_SSL !== 'false');
 
 const pool = new Pool(useConnectionString
   ? {
-      connectionString: process.env.DATABASE_URL,
+      connectionString,
       ssl: sslEnabled ? { rejectUnauthorized: false } : false,
       client_encoding: 'utf8',
     }
