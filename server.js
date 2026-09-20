@@ -65,13 +65,50 @@ app.use(morgan(':method :safe-path :status :response-time ms'));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
+app.get('/api/health', async (_req, res) => {
+  const databaseConfigured = Boolean(
+    process.env.DATABASE_URL ||
+    (process.env.DB_HOST && process.env.DB_NAME && process.env.DB_USER)
+  );
+
+  if (!databaseConfigured) {
+    return res.status(503).json({
+      status: 'ERROR',
+      message: 'Base de données non configurée',
+      code: 'DATABASE_CONFIG_MISSING',
+      databaseConfigured: false
+    });
+  }
+
+  try {
+    const capabilities = await ensureDatabaseReady();
+    return res.status(200).json({
+      status: 'OK',
+      message: 'Backend et base de données opérationnels',
+      databaseConfigured: true,
+      pgTrgm: Boolean(capabilities?.pgTrgm)
+    });
+  } catch (error) {
+    console.error('❌ Healthcheck PostgreSQL :', error);
+    return res.status(503).json({
+      status: 'ERROR',
+      message: 'Base de données temporairement indisponible',
+      code: error?.code || 'DATABASE_INITIALIZATION_FAILED',
+      databaseConfigured: true
+    });
+  }
+});
+
 app.use('/api', async (_req, res, next) => {
   try {
     await ensureDatabaseReady();
     return next();
   } catch (error) {
-    console.error('❌ Initialisation PostgreSQL impossible :', error.message);
-    return res.status(503).json({ message: 'Base de données temporairement indisponible' });
+    console.error('❌ Initialisation PostgreSQL impossible :', error);
+    return res.status(503).json({
+      message: 'Base de données temporairement indisponible',
+      code: error?.code || 'DATABASE_INITIALIZATION_FAILED'
+    });
   }
 });
 
@@ -87,10 +124,6 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin-paiements', paymentAdministrationRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/chatbot', chatbotRoutes);
-
-app.get('/api/health', (_req, res) => {
-  res.status(200).json({ status: 'OK', message: 'Backend is running' });
-});
 
 app.use('/api', (_req, res) => {
   res.status(404).json({ message: 'Route non trouvée' });
