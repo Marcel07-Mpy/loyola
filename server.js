@@ -71,6 +71,7 @@ app.get('/api/health', async (_req, res) => {
     process.env.POSTGRES_URL ||
     process.env.POSTGRES_PRISMA_URL ||
     process.env.NEON_DATABASE_URL ||
+    process.env.NEON_URL ||
     process.env.DATABASE_URL_UNPOOLED ||
     (process.env.DB_HOST && process.env.DB_NAME && process.env.DB_USER)
   );
