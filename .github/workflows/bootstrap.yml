@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     paths:
-      - ".bootstrap/loyola_vercel_ready.zip"
+      - ".bootstrap/loyola_bootstrap.b64"
 
 permissions:
   contents: write
@@ -13,14 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Expand project archive
+      - name: Reconstruct and expand project archive
         run: |
-          rm -rf .bootstrap_unpack
-          mkdir .bootstrap_unpack
-          unzip -q .bootstrap/loyola_vercel_ready.zip -d .bootstrap_unpack
+          test -f .bootstrap/loyola_bootstrap.b64
+          base64 -d .bootstrap/loyola_bootstrap.b64 > /tmp/loyola_vercel_ready.zip
+          rm -rf /tmp/loyola_unpack
+          mkdir -p /tmp/loyola_unpack
+          unzip -q /tmp/loyola_vercel_ready.zip -d /tmp/loyola_unpack
           shopt -s dotglob
-          cp -R .bootstrap_unpack/loyola_vercel_ready/* .
-          rm -rf .bootstrap .bootstrap_unpack
+          cp -R /tmp/loyola_unpack/loyola_vercel_ready/* .
+          rm -rf .bootstrap
           rm -f .github/workflows/bootstrap.yml
       - name: Commit expanded repository
         run: |
