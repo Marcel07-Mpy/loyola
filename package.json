@@ -4,7 +4,9 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "db:init": "node scripts/initDatabase.js",
+    "db:admin": "node scripts/createAdmin.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
