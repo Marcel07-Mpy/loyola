@@ -28,7 +28,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import chatbotRoutes from './routes/chatbotRoutes.js';
 
 import pool from './config/db.js';
-import { inspectDatabaseFeatures } from './config/databaseSetup.js';
+import { ensureDatabaseReady, inspectDatabaseFeatures } from './config/databaseSetup.js';
 import { authenticateSocket } from './utils/socketAuth.js';
 
 dotenv.config();
@@ -64,6 +64,16 @@ morgan.token('safe-path', (req) => (req.originalUrl || req.url || '').split('?')
 app.use(morgan(':method :safe-path :status :response-time ms'));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
+
+app.use('/api', async (_req, res, next) => {
+  try {
+    await ensureDatabaseReady();
+    return next();
+  } catch (error) {
+    console.error('❌ Initialisation PostgreSQL impossible :', error.message);
+    return res.status(503).json({ message: 'Base de données temporairement indisponible' });
+  }
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
